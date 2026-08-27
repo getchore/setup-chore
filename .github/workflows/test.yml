@@ -1,0 +1,26 @@
+# Smoke-tests the action on every runner OS.
+#
+# Manual for now: it installs from the latest chore release, and there is no
+# release yet, so an automatic run would sit red for reasons unrelated to this
+# action. Switch to `on: push` once v0.1.0 ships.
+name: test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup
+        uses: ./
+      - name: chore is on PATH
+        shell: bash
+        run: |
+          chore --version
+          echo "action reported: ${{ steps.setup.outputs.version }}"

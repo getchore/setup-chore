@@ -1,0 +1,43 @@
+name: 'Setup chore'
+description: 'Install the chore task runner and put it on PATH.'
+author: 'getchore'
+
+branding:
+  icon: 'terminal'
+  color: 'orange'
+
+inputs:
+  version:
+    description: 'Release tag to install, e.g. v0.15.0. Defaults to the latest release.'
+    required: false
+    default: ''
+
+outputs:
+  version:
+    description: 'The version that was installed, as reported by `chore --version`.'
+    value: ${{ steps.report.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # The two branches live here so they do not live in anyone's workflow.
+    - name: Install chore (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: curl -fsSL https://getchore.github.io/chore/install.sh | sh -s -- ${{ inputs.version }}
+
+    - name: Install chore (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $block = [scriptblock]::Create((Invoke-RestMethod https://getchore.github.io/chore/install.ps1))
+        & $block ${{ inputs.version }}
+
+    - name: Add to PATH
+      shell: bash
+      run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Report version
+      id: report
+      shell: bash
+      run: echo "version=$(chore --version)" >> "$GITHUB_OUTPUT"
