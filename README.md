@@ -14,7 +14,7 @@ Pin a release instead of tracking the latest:
 ```yaml
 - uses: getchore/setup-chore@v1
   with:
-    version: v0.15.0
+    version: v1.4.1
 ```
 
 ## Inputs

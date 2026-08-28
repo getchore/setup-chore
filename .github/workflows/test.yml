@@ -1,26 +1,68 @@
-# Smoke-tests the action on every runner OS.
-#
-# Manual for now: it installs from the latest chore release, and there is no
-# release yet, so an automatic run would sit red for reasons unrelated to this
-# action. Switch to `on: push` once v0.1.0 ships.
 name: test
 
+# An install action nobody runs is an install action that is broken and does
+# not know it. This ran once against a stale URL that happened to still answer
+# from a frozen Pages deployment; the next change to that site would have taken
+# every workflow using this action down with it.
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
+  # The action installs from a site and a release it does not control, so it
+  # can break without anything here changing.
+  schedule:
+    - cron: '43 7 * * *'
 
 jobs:
   install:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        runner:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - windows-latest
+          - windows-11-arm
     steps:
-      - uses: actions/checkout@v4
-      - id: setup
-        uses: ./
-      - name: chore is on PATH
-        shell: bash
+      - uses: actions/checkout@v5
+
+      - uses: ./
+        id: setup
+
+      # On PATH, runnable, and the output says what it installed.
+      - shell: bash
         run: |
+          set -euo pipefail
           chore --version
+          [ -n "${{ steps.setup.outputs.version }}" ] || { echo "::error::no version output"; exit 1; }
           echo "action reported: ${{ steps.setup.outputs.version }}"
+
+      # And it actually runs a chorefile, which is the only thing anyone
+      # installs it to do.
+      - shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p smoke && cd smoke
+          printf '# greet the platform\ntask hello {\n    echo "hello from $PLATFORM"\n}\n' > chorefile
+          chore check
+          chore list
+          chore hello
+
+  pinned:
+    name: pinned version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./
+        with:
+          version: v1.4.0
+      - shell: bash
+        run: |
+          set -euo pipefail
+          got=$(chore --version | awk '{print $2}')
+          echo "installed $got"
+          [ "$got" = "1.4.0" ] || { echo "::error::asked for 1.4.0, got $got"; exit 1; }

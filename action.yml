@@ -8,7 +8,7 @@ branding:
 
 inputs:
   version:
-    description: 'Release tag to install, e.g. v0.15.0. Defaults to the latest release.'
+    description: 'Release tag to install, e.g. v1.4.1. Defaults to the latest release.'
     required: false
     default: ''
 
@@ -24,13 +24,13 @@ runs:
     - name: Install chore (Unix)
       if: runner.os != 'Windows'
       shell: bash
-      run: curl -fsSL https://getchore.github.io/chore/install.sh | sh -s -- ${{ inputs.version }}
+      run: curl -fsSL https://getchore.github.io/install.sh | sh -s -- ${{ inputs.version }}
 
     - name: Install chore (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $block = [scriptblock]::Create((Invoke-RestMethod https://getchore.github.io/chore/install.ps1))
+        $block = [scriptblock]::Create((Invoke-RestMethod https://getchore.github.io/install.ps1))
         & $block ${{ inputs.version }}
 
     - name: Add to PATH
