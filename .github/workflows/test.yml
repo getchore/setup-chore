@@ -33,6 +33,12 @@ jobs:
       - uses: ./
         id: setup
 
+      # In the runner's *default* shell first: that is PowerShell on Windows, and it is what
+      # a caller's plain `- run: chore build` gets. Every check below pins bash, which on
+      # Windows is Git Bash -- a shell that resolves path forms PowerShell does not, so a
+      # bash-only suite passed while every Windows consumer was broken.
+      - run: chore --version
+
       # On PATH, runnable, and the output says what it installed.
       - shell: bash
         run: |

@@ -15,7 +15,7 @@ inputs:
 outputs:
   version:
     description: 'The version that was installed, as reported by `chore --version`.'
-    value: ${{ steps.report.outputs.version }}
+    value: ${{ steps.report.outputs.version || steps.report-windows.outputs.version }}
 
 runs:
   using: composite
@@ -33,11 +33,28 @@ runs:
         $block = [scriptblock]::Create((Invoke-RestMethod https://getchore.github.io/install.ps1))
         & $block ${{ inputs.version }}
 
-    - name: Add to PATH
+    # PATH is written in the shell the caller's own steps will run in. bash on a Windows
+    # runner is Git Bash, where $HOME expands to /c/Users/..., and PowerShell -- the default
+    # there -- cannot resolve that form. Reporting the version from bash too would keep
+    # passing, because the path it just wrote is the one form Git Bash does understand.
+    - name: Add to PATH (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-    - name: Report version
+    - name: Add to PATH (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $HOME '.local\bin')
+
+    - name: Report version (Unix)
       id: report
+      if: runner.os != 'Windows'
       shell: bash
       run: echo "version=$(chore --version)" >> "$GITHUB_OUTPUT"
+
+    - name: Report version (Windows)
+      id: report-windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$(chore --version)"
