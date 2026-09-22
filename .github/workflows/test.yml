@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
   # The action installs from a site and a release it does not control, so it
   # can break without anything here changing.
-  schedule:
-    - cron: '43 7 * * *'
+  # schedule:
+    # - cron: '43 7 * * *'
 
 jobs:
   install:
